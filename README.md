@@ -24,5 +24,5 @@ Modify the dataset_path in `./options/train_config.yaml` to your `[path_to_save]
 python train.py --config ./options/train_config.yaml
 
 :running_woman: Evaluation
-run files in eval
+run files in test_class
 
