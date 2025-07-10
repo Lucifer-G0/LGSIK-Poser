@@ -18,5 +18,11 @@
 ```
 python ./prepare_data.py --support_dir ./body_models/ --root_dir ./data/AMASS/ --save_dir [path_to_save]
 ```
-
 ## :bicyclist: Training
+
+Modify the dataset_path in `./options/train_config.yaml` to your `[path_to_save]`.
+python train.py --config ./options/train_config.yaml
+
+:running_woman: Evaluation
+run files in eval
+
