@@ -32,10 +32,10 @@ python train.py --config ./options/train_config.yaml
 2. Modify config "options/test_config.yaml", espcially change the "resume_model" to the path of pretrained model
 3. run files in test
 
-   -model_param.py: test model param、flops、inference speed
+   model_param.py: test model param、flops、inference speed
 
-   -test_class_real.py: sling window for online running
+   test_class_real.py: sling window for online running
 
-   -test_class_weight.py: sequence length weighted offline running
+   test_class_weight.py: sequence length weighted offline running
 
-   -others mention in paper
+   others mention in paper
