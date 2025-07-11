@@ -1,6 +1,5 @@
 # LGSIK-Poser
 ##  Requirements
-### 
 - Python >= 3.9
 - PyTorch >= 2.0.1
 - numpy >= 1.23.1
@@ -22,10 +21,20 @@ python ./prepare_data.py --support_dir ./body_models/ --root_dir ./data/AMASS/ -
 ## :bicyclist: Training
 
 Modify the dataset_path in `./options/train_config.yaml` to your `[path_to_save]`.
+
+```
 python train.py --config ./options/train_config.yaml
+```
 
-:running_woman: Evaluation
+## :running_woman: Testing
 
-Download and extract the pre-trained model from the release.
-run files in test_class
+1. Download and extract the pre-trained model from the release.
+2. Modify config "options/test_config.yaml", espcially change the "resume_model" to the path of pretrained model
+3. run files in test
+   - model_param.py: test model param、flops、inference speed
+   - test_class_real.py: sling window for online running
+   - test_class_weight.py: sequence length weighted offline running
+   - others mention in paper
+
+
 
