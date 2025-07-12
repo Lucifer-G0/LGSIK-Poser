@@ -28,7 +28,7 @@ python train.py --config ./options/train_config.yaml
 
 ## :running_woman: Testing
 
-1. Download and extract the pre-trained model from the [Release](https://github.com/Lucifer-G0/LGSIK-Poser/releases/tag/pretrained).
+1. Download and extract the pre-trained model from the [Release](https://github.com/Lucifer-G0/LGSIK-Poser/releases/tag/pretrained).（Also available in directory pretrained_model now）
 2. Modify config "options/test_config.yaml", espcially change the "resume_model" to the path of pretrained model
 3. run files in test
 
