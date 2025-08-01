@@ -133,6 +133,7 @@ def load_testdata(dataset_path, split, **kwargs):
         y_max = vertices[:, 1].max()
         y_min = vertices[:, 1].min()
         height = y_max - y_min
+        height = 0  # unfixed training bug, temp repalce
 
         gender_map = {'MALE': [1, 0], 'FEMALE': [0, 1]}
         gender_encoded = gender_map[gt_gender]
@@ -161,7 +162,8 @@ def load_testdata(dataset_path, split, **kwargs):
            'gt_global_pose': gt_global_pose,
            'gt_positions': gt_positions,
            'gt_betas': gt_betas,
-           'gt_sparse_offsets': gt_sparse_offsets
+           'gt_sparse_offsets': gt_sparse_offsets,
+            'filepath':data["filepath"]
             })
 
     return valid_motion_data
@@ -259,3 +261,40 @@ class TestDataset(Dataset):
         gt_betas = gt_betas.unsqueeze(0).repeat(input_feat_res.shape[0], 1, 1)
         gt_sparse_offsets = gt_sparse_offsets.unsqueeze(0).repeat(input_feat_res.shape[0], 1, 1)
         return input_feat_res, gt_local_pose, gt_global_pose, gt_positions, gt_betas,gt_sparse_offsets
+
+
+class EvalDataset(Dataset):
+    def __init__(
+            self,
+            train_datas,
+            compatible_inputs=['HMD', 'HMD_2IMUs', 'HMD_3IMUs'],
+            input_motion_length=40,
+            train_dataset_repeat_times=1,
+    ):
+        self.compatible_inputs = compatible_inputs
+        self.train_dataset_repeat_times = train_dataset_repeat_times
+        self.input_motion_length = input_motion_length
+        self.motions = train_datas
+
+    def __len__(self):
+        return len(self.motions)
+
+    def __getitem__(self, idx):
+        motion_data = self.motions[idx % len(self.motions)]
+
+        input_feat = motion_data['input_feat']
+        gt_local_pose = motion_data['gt_local_pose']
+        gt_global_pose = motion_data['gt_global_pose']
+        gt_positions = motion_data['gt_positions']
+        gt_betas = motion_data['gt_betas']
+        gt_sparse_offsets = motion_data['gt_sparse_offsets']
+        filepath = motion_data['filepath']
+
+        if 'HMD_3IMUs' in self.compatible_inputs:
+            pass
+        if 'HMD_2IMUs' in self.compatible_inputs:
+            input_feat[:, list(range(30, 36)) + list(range(66, 72)) + list(range(132, 135))] = 0
+        if 'HMD' in self.compatible_inputs:
+            input_feat[:, list(range(18, 36)) + list(range(54, 72)) + list(range(126, 135))] = 0
+
+        return input_feat, gt_local_pose, gt_global_pose, gt_positions, gt_betas,gt_sparse_offsets,filepath

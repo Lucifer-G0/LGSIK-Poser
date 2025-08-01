@@ -47,7 +47,7 @@ def sixd2matrot(pose_6d):
     """
     rot_vec_1 = pose_6d[:, :3]
     rot_vec_2 = pose_6d[:, 3:6]
-    rot_vec_3 = torch.cross(rot_vec_1, rot_vec_2)
+    rot_vec_3 = torch.cross(rot_vec_1, rot_vec_2, dim=1)
     pose_matrot = torch.stack([rot_vec_1, rot_vec_2, rot_vec_3], dim=-1)
     return pose_matrot
 

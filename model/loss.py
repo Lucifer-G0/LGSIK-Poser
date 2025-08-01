@@ -53,6 +53,9 @@ class PoseJointLoss(nn.Module):
         joint_position_loss = self.lossfn(pred_joint_position, gt_joint_position)
         shape_loss = self.lossfn(pred_shape, pred_shape.mean(dim=1, keepdim=True).repeat(1, pred_shape.shape[1], 1))
 
+#        accel_gt = gt_joint_position[:,:-2,:] - 2 * gt_joint_position[:,1:-1,:] + gt_joint_position[:,2:,:]
+#        accel_pose = pred_joint_position[:,:-2,:] - 2 * pred_joint_position[:,1:-1,:] + pred_joint_position[:,2:,:]
+#        acc = self.lossfn(accel_pose, accel_gt)
 
         sparse_index = [0, 20, 21]
         sparse_joint_position_loss = self.lossfn(pred_joint_position[:, :, sparse_index],
@@ -74,8 +77,8 @@ class PoseJointLoss(nn.Module):
                       self.global_pose_weight * global_pose_loss +
                       self.joint_position_weight * joint_position_loss +
                       self.joint_position_weight * sparse_joint_position_loss +
-                      self.acc_loss_weight * loss_vel +
-                      self.shape_loss_weight * shape_loss
+                      self.acc_loss_weight * loss_vel+
+                      self.shape_loss_weight*shape_loss
                       )
 
-        return self.root_orientation_weight * root_orientation_loss, self.local_pose_weight * local_pose_loss, self.global_pose_weight * global_pose_loss, self.joint_position_weight * joint_position_loss, self.acc_loss_weight * loss_vel, self.shape_loss_weight * shape_loss, total_loss
+        return self.root_orientation_weight * root_orientation_loss, self.local_pose_weight * local_pose_loss, self.global_pose_weight * global_pose_loss, self.joint_position_weight * joint_position_loss, self.acc_loss_weight * loss_vel, self.shape_loss_weight*shape_loss, total_loss

@@ -36,7 +36,7 @@ def generate_input_features(bdata_poses, body_pose_world, bm):
     rotation_global_matrot = local2global_pose(
         rotation_local_matrot, bm.kintree_table[0].long()
     )  # rotation of joints relative to the origin
-    
+
     head_rotation_global_matrot = rotation_global_matrot[:, [15], :, :]
 
     rotation_global_6d = utils_transform.matrot2sixd(
@@ -80,7 +80,7 @@ def generate_input_features(bdata_poses, body_pose_world, bm):
     hands_rotation_in_head_space_r6d = utils_transform.matrot2sixd(
         hands_rotation_mat_in_head_space.reshape(-1, 3, 3)
     ).reshape(hands_rotation_mat_in_head_space.shape[0], -1, 6)[1:]
-    
+
     rotation_velocity_handsinheadspace = torch.matmul(
         torch.inverse(hands_rotation_mat_in_head_space[:-1]),
         hands_rotation_mat_in_head_space[1:],
@@ -90,7 +90,7 @@ def generate_input_features(bdata_poses, body_pose_world, bm):
     ).reshape(rotation_velocity_handsinheadspace.shape[0], -1, 6)
 
     hands_position_in_head_space = (position_global_full_gt_world[:, [20, 21], :] - position_global_full_gt_world[:, 15:16, :]).double().bmm(rotation_global_matrot[:, 15])
-    
+
     foot_accs = _syn_acc(body_pose_world.v[:, [1176, 4662, 3021]])[1:, :, :]
 
     hmd_position_global_full_gt_list = torch.cat(
@@ -125,6 +125,159 @@ def generate_input_features(bdata_poses, body_pose_world, bm):
         position_global_full_gt_world[1:].cpu().float()
     )
     return data
+
+def process_protocol3(args, bm_male, bm_female):
+    for dataroot_subset in ["HUMAN4D", "SOMA"]:
+        print(dataroot_subset)
+
+        phase="test"
+        savedir = os.path.join(args.save_dir, dataroot_subset, phase)
+        if not os.path.exists(savedir):
+            os.makedirs(savedir)
+
+        filepaths = []
+        for root, dirs, files in os.walk(os.path.join(args.root_dir, dataroot_subset)):
+            for file in files:
+                # 检查文件是否以.npz结尾，且文件名不是shape.npz
+                if file.endswith('.npz') and file != 'shape.npz':
+                    full_path = os.path.join(root, file)
+                    filepaths.append(full_path)
+        print(filepaths)
+
+
+        idx = 0
+        data_total = []
+        for filepath in tqdm(filepaths):
+            bdata = np.load(filepath, allow_pickle=True)
+            framerate = bdata.get('mocap_frame_rate', bdata.get('mocap_framerate', None))
+            if framerate is None:
+                continue
+            # print(framerate)
+            if framerate == 120:
+                stride = 2
+            elif framerate == 60:
+                stride = 1
+            else:
+                raise AssertionError(
+                    "Please check your AMASS data, should only have 2 types of framerate, either 120 or 60!!!"
+                )
+
+            bdata_poses = bdata["poses"][::stride, ...]
+            bdata_trans = bdata["trans"][::stride, ...]
+            bdata_betas = bdata["betas"]
+            subject_gender = bdata["gender"]
+
+            bm = bm_male if subject_gender == 'male' else bm_female
+
+            body_parms = {
+                "root_orient": torch.Tensor(
+                    bdata_poses[:, :3]
+                ),  # .to(comp_device), # controls the global root orientation
+                "pose_body": torch.Tensor(
+                    bdata_poses[:, 3:66]
+                ),  # .to(comp_device), # controls the body
+                "trans": torch.Tensor(
+                    bdata_trans
+                ),  # .to(comp_device), # controls the global body position
+                'betas': torch.Tensor(
+                    bdata_betas
+                ).repeat(bdata_poses.shape[0], 1),
+            }
+
+            body_parms_list = body_parms
+
+            body_pose_world = bm(
+                **{
+                    k: v
+                    for k, v in body_parms.items()
+                    if k in ["pose_body", "root_orient", "trans", 'betas']
+                }
+            )
+
+            data = generate_input_features(bdata_poses, body_pose_world, bm)
+            data["body_parms_list"] = body_parms_list
+            data["framerate"] = 60
+            data["gender"] = subject_gender
+            data["filepath"] = filepath
+            data_total.append(data)
+            idx += 1
+        torch.save(data_total, os.path.join(savedir, "{}.pt".format(idx)))
+
+def process_protocol4(args, bm_male, bm_female):
+    for dataroot_subset in ["DanceDB"]:
+        print(dataroot_subset)
+        for phase in ["test"]:
+            savedir = os.path.join(args.save_dir, dataroot_subset, phase)
+            if not os.path.exists(savedir):
+                os.makedirs(savedir)
+
+            filepaths = []
+            for root, dirs, files in os.walk(os.path.join(args.root_dir, dataroot_subset,phase)):
+                for file in files:
+                    # 检查文件是否以.npz结尾，且文件名不是shape.npz
+                    if file.endswith('.npz') and file != 'shape.npz':
+                        full_path = os.path.join(root, file)
+                        filepaths.append(full_path)
+            print(filepaths)
+
+            idx = 0
+            data_total = []
+            for filepath in tqdm(filepaths):
+                bdata = np.load(filepath, allow_pickle=True)
+                framerate = bdata.get('mocap_frame_rate', bdata.get('mocap_framerate', None))
+                if framerate is None:
+                    continue
+                # print(framerate)
+                if framerate == 120:
+                    stride = 2
+                elif framerate == 60:
+                    stride = 1
+                else:
+                    raise AssertionError(
+                        "Please check your AMASS data, should only have 2 types of framerate, either 120 or 60!!!"
+                    )
+
+                bdata_poses = bdata["poses"][::stride, ...]
+                bdata_trans = bdata["trans"][::stride, ...]
+                bdata_betas = bdata["betas"]
+                subject_gender = bdata["gender"]
+                print(subject_gender)
+
+                bm = bm_male if subject_gender == 'male' else bm_female
+
+                body_parms = {
+                    "root_orient": torch.Tensor(
+                        bdata_poses[:, :3]
+                    ),  # .to(comp_device), # controls the global root orientation
+                    "pose_body": torch.Tensor(
+                        bdata_poses[:, 3:66]
+                    ),  # .to(comp_device), # controls the body
+                    "trans": torch.Tensor(
+                        bdata_trans
+                    ),  # .to(comp_device), # controls the global body position
+                    'betas': torch.Tensor(
+                        bdata_betas
+                    ).repeat(bdata_poses.shape[0], 1),
+                }
+
+                body_parms_list = body_parms
+
+                body_pose_world = bm(
+                    **{
+                        k: v
+                        for k, v in body_parms.items()
+                        if k in ["pose_body", "root_orient", "trans", 'betas']
+                    }
+                )
+
+                data = generate_input_features(bdata_poses, body_pose_world, bm)
+                data["body_parms_list"] = body_parms_list
+                data["framerate"] = 60
+                data["gender"] = subject_gender
+                data["filepath"] = filepath
+                data_total.append(data)
+                idx += 1
+            torch.save(data_total, os.path.join(savedir, "{}.pt".format(idx)))
 
 def process_protocol1(args, bm_male, bm_female):
     for dataroot_subset in ["BioMotionLab_NTroje", "CMU", "MPI_HDM05"]:
@@ -232,7 +385,7 @@ def process_protocol2(args, bm_male, bm_female):
                 framerate = bdata["mocap_framerate"]
             else:
                 continue
-            
+
             if framerate == 120:
                 stride = 2
             elif framerate == 60:
@@ -301,17 +454,17 @@ if __name__ == "__main__":
         help="=dir where you want to save your generated data",
     )
     parser.add_argument(
-        "--root_dir", 
-        type=str, 
-        default=None, 
+        "--root_dir",
+        type=str,
+        default=None,
         help="=dir where you put your AMASS/HMD data",
     )
     parser.add_argument(
-        "--protocol", 
-        type=str, 
-        choices=['protocol1', 'protocol2'],
-        default='protocol1',
-        help="=protocol1 or protocol2",
+        "--protocol",
+        type=str,
+        choices=['protocol1', 'protocol2', 'protocol3','protocol4'],
+        default='protocol4',
+        help="=protocol1 or protocol2 or protocol3 or protocol4",
     )
     args = parser.parse_args()
 
@@ -335,14 +488,18 @@ if __name__ == "__main__":
     )
 
     bm_female = BodyModel(
-        bm_fname=bm_fname_female, 
-        num_betas=num_betas, 
-        num_dmpls=num_dmpls, 
+        bm_fname=bm_fname_female,
+        num_betas=num_betas,
+        num_dmpls=num_dmpls,
         dmpl_fname=dmpl_fname_female
     )
     if args.protocol == 'protocol1':
         process_protocol1(args, bm_male, bm_female)
     elif args.protocol == 'protocol2':
         process_protocol2(args, bm_male, bm_female)
+    elif args.protocol == 'protocol3':
+        process_protocol3(args, bm_male, bm_female)
+    elif args.protocol == 'protocol4':
+        process_protocol4(args, bm_male, bm_female)
     else:
         raise NotImplementedError("Protocol {} is not implemented".format(args.protocol))

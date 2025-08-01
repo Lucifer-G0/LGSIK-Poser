@@ -1,11 +1,11 @@
 task: "HMD_IMU_Human_Motion_Estimation"
 
 model_name: "HMD_imu_HME_Universe"
-dataset_path: "./data/preprocess/AMASS"
+dataset_path: "./data/preprocess/"
 support_dir: "./body_models/"
-resume_model: "/root/HMD-Poser-down/experiments/HMD_IMU_Human_Motion_Estimation/2025-06-30-16-15-21/epoch_with_best_testloss.pt"
+resume_model: "pretrained_model/epoch_with_best_testloss.pt"
 manual_seed: null
-compatible_inputs: ['HMD_3IMUs','HMD_2IMUs','HMD']
+compatible_inputs: ['HMD_3IMUs']  # ,'HMD_2IMUs','HMD'
 sparse_dim: 135
 input_motion_length: 40
 train_dataset_repeat_times: 1

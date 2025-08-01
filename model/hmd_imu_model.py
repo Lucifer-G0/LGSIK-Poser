@@ -63,13 +63,17 @@ class HMDIMUModel(nn.Module):
             global_orientation.shape[0], -1).float()
         joint_rotation = utils_transform.sixd2aa(joint_rotation.reshape(-1, 6)).reshape(joint_rotation.shape[0],
                                                                                         -1).float()
+
         body_pose = self.bm(**{
             'root_orient': global_orientation,
             'pose_body': joint_rotation,
-            'betas': body_shape.float()
+            'betas': body_shape.float(),
+            'joints': None
         })
         joint_position = body_pose.Jtr[:, :22]
-        return joint_position
+        vertices = body_pose.v
+
+        return joint_position,vertices
 
     def get_bare_model(self, network):
         """Get bare model, especially under wrapping with
@@ -112,9 +116,9 @@ class HMDIMUModel(nn.Module):
         torch.save({'state_dict': network.state_dict(),
                     'epoch': epoch}, filename)
 
-    def forward(self, sparse_input,sparse_offsets):
+    def forward(self, sparse_input, sparse_offsets):
         batch_size, time_length = sparse_input.shape[0], sparse_input.shape[1]
-        pred_pose, pred_shapes = self.netG(sparse_input,sparse_offsets)
+        pred_pose, pred_shapes = self.netG(sparse_input, sparse_offsets)
 
         rotation_local_matrot = utils_transform.sixd2matrot(pred_pose.reshape(-1, 6)).reshape(batch_size * time_length,
                                                                                               22, 3, 3)
@@ -124,8 +128,7 @@ class HMDIMUModel(nn.Module):
                                                                                                             time_length,
                                                                                                             22 * 6)
 
-        pred_joint_position = self.fk_module(pred_pose[:, :, :6].reshape(-1, 6),
+        pred_joint_position,vertices = self.fk_module(pred_pose[:, :, :6].reshape(-1, 6),
                                              pred_pose[:, :, 6:].reshape(-1, 21 * 6), pred_shapes.reshape(-1, 16))
         pred_joint_position = pred_joint_position.reshape(batch_size, time_length, 22, 3)
-        return pred_pose, pred_shapes, rotation_global_r6d, pred_joint_position
-
+        return pred_pose, pred_shapes, rotation_global_r6d, pred_joint_position,vertices

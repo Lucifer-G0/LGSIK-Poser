@@ -169,6 +169,24 @@ def rootpe(
     )
     return pos_error_root
 
+def footpe(
+    predicted_position,
+    predicted_angle,
+    predicted_root_angle,
+    gt_position,
+    gt_angle,
+    gt_root_angle,
+    upper_index,
+    lower_index,
+    fps,
+):
+    pos_error_root = torch.mean(
+        torch.sqrt(torch.sum(torch.square(gt_position - predicted_position), axis=-1))[
+            ..., [7,8]
+        ]
+    )
+    return pos_error_root
+
 def mpjve(
     predicted_position,
     predicted_angle,
@@ -194,11 +212,12 @@ metric_funcs_dict = {
     "mpjre": mpjre,
     "mpjpe": mpjpe,
     "mpjve": mpjve,
-    "pred_jitter": pred_jitter,
     "handpe": handpe,
     "upperpe": upperpe,
     "lowerpe": lowerpe,
     "rootpe": rootpe,
+    "footpe": footpe,
+    "pred_jitter": pred_jitter,
     "gt_jitter": gt_jitter,
 }
 
