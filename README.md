@@ -34,9 +34,10 @@ python train.py --config ./options/train_config.yaml
 
    model_param.py: test model param、flops、inference speed
 
-**Check directory "video" for more details on qualitative results.**
    test_class_real.py: sling window for online running
 
    test_class_weight.py: sequence length weighted offline running
 
    others mention in paper
+
+**Check directory "video" for more details on qualitative results.**
