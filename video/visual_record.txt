@@ -1,0 +1,24 @@
+leg_error: kick425
+hand_diff: hdm-bk-3-11	554
+shape_error: playingcards 454
+pelvis_error: playingcards 2106
+
+
+Compare：
+kick_001_stageii.npz
+INF_PlayingCards_S3S4_01_poses.npz
+HDM_bk_03-11_02_120_poses.npz
+
+Trajectory：
+HDM_bk_03-11_02_120_poses.npz
+
+Multiperson:
+"eval/BML_038_0022_throwing_hard1_poses.npz", 
+"eval/BML_045_0003_treadmill_jog_poses.npz",
+"eval/BML_055_0026_kicking2_poses.npz",
+"eval/BML_077_0013_knocking1_poses.npz",
+"eval/BML_007_0009_knocking2_poses.npz", 
+"eval/BML_111_0001_treadmill_fast_poses.npz",
+"eval/BML_091_0013_knocking1_poses.npz", 
+"eval/BML_008_0014_knocking2_poses.npz",
+"eval/HDM_tr_05-03_02_120_poses.npz"
